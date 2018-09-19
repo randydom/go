@@ -55,7 +55,7 @@ type (
 	}
 
 	Document interface {
-		Count() string
+		Count(file string) *Report
 	}
 )
 

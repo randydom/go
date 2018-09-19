@@ -9,11 +9,25 @@ import (
 	"unicode"
 	"io/ioutil"
 		"time"
+	"sync"
 )
 
 type document interface {
 	Count() string
 }
+
+/*
+@ This interface is useful for the go routine example
+ */
+ type fileProcessor interface {
+ 	FromFile(file *os.File, oc outChannel)
+ }
+
+type fileCounter struct{
+	buff int
+}
+
+type outChannel chan *report
 
 type letter struct{
 	numLetter int
@@ -42,51 +56,50 @@ type report struct{
 	p paragraph
 	fileName string
 }
+
 // The main program will read the test case text and create the report
 func main() {
+	var wg sync.WaitGroup
+	out := make(outChannel, 10)
+	var filePaths map[string]*os.File
 
-	dir :=  "././Shakespere/" //"./test/"
-
-	files, err := ioutil.ReadDir(dir)
-	if err != nil{
-		log.Fatal(err)
-		fmt.Println(err)
-	}
-
-	reportList := make(map[string]report)
-
+	// this object implements FileProcessor Interface
+	fCounter := fileCounter{buff:0}
 	/*
 			Start Countdown
 	 */
-
 	 start := time.Now()
 
-	/*
-			Open a channel
-	 */
 
-	 rep := make(chan os.File)
-	 con := make(chan os.File)
+	 dir :=  "././Shakespere/" //"./test/"
+	 files, err := ioutil.ReadDir(dir)
+	 if err != nil {
+		 log.Fatal(err)
+		 fmt.Println(err)
+	 }
 
-	 go func() {
-	 	for _, file := range files{
-			content, err := os.Open(dir+file.Name()) // The “test_case.txt” is a sample text to test the code.
-			if err != nil {
-				log.Fatal(err)
-			}
-			rep <- *content
-		}
-	 }()
+	reportList := make(map[string]report)
+	 /*
+	 * This main routine will implement concurrency.
+	 * The first go routine will open threads for each file
+	 * the second go routine will wait for all files and will close channels
+	  */
+	  for _, fp := range filePaths{
 
-	 go func() {
+	  	r := createReport(fn) // the @fn := string and is the filename of each document
+	  	out <- r
+	  	wg.Add(1)
+	  	go func(){
+	  		defer wg.Done()
+			fCounter.fromFilePath(fp, out)
+		}()
 
-	 	for c := range rep{
-	 		con <- c
+	  	go func(){
+	  		wg.Wait()
+	  		close(out)
+		}()
+	  }
 
-			scanner := bufio.NewScanner(con)
-		}
-
-	 }()
 
 	for _, file := range files{
 		/****************/
@@ -98,11 +111,6 @@ func main() {
 		//defer content.Close()
 
 		scanner := bufio.NewScanner(content)
-
-		//p := paragraph{numParagraph:0,listParagraphs:[]string{},}
-		//s := sentence{numSentence:0,listSentence:[]string{},}
-		//w := word{numWord:0, vocabulary: []string{},}
-		//l := letter{numLetter:0, numSymbol:0,}
 
 		r := report{
 			// initialisation of struct variables
@@ -205,6 +213,28 @@ func (l letter) Count() string{
 
 func (p paragraph) Count() string{
 	return fmt.Sprintf("The number of paragraphs are: %d\n", p.numParagraph)
+}
+
+func (fc fileCounter) fromFilePath(path string, outChan chan *report) {
+	/*
+		Probably here I will fit the logic of the program.
+	 */
+}
+
+/*
+	This function creates a report struct each time is called
+ */
+func createReport(fn string) *report{
+	r := report{
+		// initialisation of struct variables
+		p:paragraph{numParagraph:0,listParagraphs:[]string{},},
+		s:sentence{numSentence:0,listSentence:[]string{},},
+		w:word{numWord:0, vocabulary: []string{},},
+		l:letter{numLetter:0, numSymbol:0,},
+		fileName: fn,
+	}
+
+	return &r
 }
 
 // This function will determine the number of sentences in a line
