@@ -20,14 +20,7 @@ func NewConcreteFileProcessor(reportId int) FileProcessor.Document{
 
 func (c *ConcreteFileProcessor) Count(file string) *FileProcessor.Report{
 
-	r := &FileProcessor.Report{
-		P:FileProcessor.Paragraph{NumParagraph:0,ListParagraphs:[]string{}},
-		S:FileProcessor.Sentence{NumSentence:0, ListSentence:[]string{}},
-		W:FileProcessor.Word{NumWord:0, Vocabulary:[]string{}},
-		L:FileProcessor.Letter{NumLetter:0, NumSymbol:0},
-		FileName: file,
-		ThreadId: c.ReportId,
-	}
+	r := createNewReport(file, c.ReportId)
 
 	content, err := os.Open(file) // The “test_case.txt” is a sample text to test the code.
 	if err != nil {
@@ -52,7 +45,7 @@ func (c *ConcreteFileProcessor) Count(file string) *FileProcessor.Report{
 		//fmt.Printf("Raw Line: %s\n", line)
 		if len(line)>0{
 
-			line = formatText(line) // This method add and delete a space where is needed
+			//line = formatText(line) // This method add and delete a space where is needed
 
 			r.P.ListParagraphs = append(r.P.ListParagraphs, line)
 			r.P.NumParagraph ++
@@ -62,10 +55,17 @@ func (c *ConcreteFileProcessor) Count(file string) *FileProcessor.Report{
 			}
 			subFields := strings.FieldsFunc(line,f) // built in function to break a string in whitespace
 			tempSentence := "" // the tempSentence will concatenate fields of words until it meets a sentence stop.
-			for _, sf := range subFields{
+			post := ""
+			for i, sf := range subFields{
 				tempSentence = tempSentence + " " + sf
 
-				if findSentence(sf) || sf==subFields[len(subFields)-1]{ // The method findSentence returns a boolean to either the field is the last word of a sentence or not
+				if i == (len(subFields) -1){
+					post = "EOF"
+				}else{
+					post = subFields[i+1]
+				}
+
+				if isNewSentence(sf, post){ // The method findSentence returns a boolean to either the field is the last word of a sentence or not
 					r.S.NumSentence++
 					r.S.ListSentence = append(r.S.ListSentence, tempSentence) // Then the sentence is appended to the struct list
 

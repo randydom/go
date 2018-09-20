@@ -3,10 +3,14 @@ package FileProcessor
 import (
 	"strings"
 	"unicode"
+	"net/url"
+	"log"
+	"sync"
 )
 
 type (
-	/**************************/
+
+	 /*************************/
 	/****** Structures *******/
 
 	Letter struct{
@@ -42,12 +46,13 @@ type (
 		Buff int
 	}
 
-	/**************************/
+	 /*************************/
 	/*******  Channel ********/
 
 	OutChannel chan *Report
+	OutLineChannel chan *Report
 
-	/**************************/
+	 /*************************/
 	/****** Interfaces *******/
 
 	ProcessFromPath interface {
@@ -57,28 +62,47 @@ type (
 	Document interface {
 		Count(file string) *Report
 	}
+
+	ProcessFromLine interface {
+		FromLine(line string, out OutLineChannel)
+	}
 )
 
+ /**************************/
+/********* Locks **********/
+var mu sync.Mutex
+
 func (r *Report) FindWord(sf string) {
+
 	tmpWord := FindWordLetter(sf) // This method cleans the field word from any symbol, in order to count the letters and add the word to the vocabulary
 	r.AddWord(tmpWord, sf)
 }
 
 func (r *Report) AddWord(tmpWord string, sf string){
+
 	r.W.Vocabulary = append(r.W.Vocabulary, tmpWord)
 
 	if len(tmpWord)>0{
-		r.W.NumWord ++
+		if strings.HasPrefix(tmpWord,"http"){
+
+			u, err := url.Parse(sf)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			r.W.NumWord += len(u.Query())*2 + len(strings.Split(u.Host, ".")) + 1
+
+		}else{
+			r.W.NumWord ++
+		}
+
 	}
-	if CheckCombineWord(tmpWord){ // The method checkCombineWord returns a boolean if the field word is a combined word with dash
+	if CheckCombineWord(sf){ // The method checkCombineWord returns a boolean if the field word is a combined word with dash
 		r.W.NumWord ++
 	}
 	r.L.NumLetter += len(tmpWord)
 	r.L.NumSymbol += len(strings.TrimSpace(sf))
 
-	if strings.Contains(sf,`“`) || strings.Contains(sf,`”`){
-		r.L.NumSymbol -= 2
-	}
 }
 
 func FindWordLetter(w string) string{
@@ -100,3 +124,4 @@ func CheckCombineWord(w string) bool {
 	}
 	return false
 }
+

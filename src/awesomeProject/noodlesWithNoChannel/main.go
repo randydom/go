@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"awesomeProject/FileProcessor/impl"
 	"awesomeProject/FileProcessor"
-)
+	)
 
 var(
 	fileMap []string
@@ -18,8 +18,6 @@ var(
 
 
 func main(){
-
-	
 
 	buildFileMap()
 
@@ -33,7 +31,7 @@ func main(){
 
 func buildFileMap() {
 
-	filepath.Walk("./Shakespere/", func(path string, info os.FileInfo, err error) error {
+	filepath.Walk("./Shakespere/", func(path string, info os.FileInfo, err error) error { 	//"./Shakespere/"
 
 		if strings.HasSuffix(path, ".txt") {
 			fileMap = append(fileMap, path)
