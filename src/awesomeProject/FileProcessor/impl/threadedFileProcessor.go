@@ -13,10 +13,6 @@ type (
 	//ThreadedLineProcessor struct{fileName string; threadId int}
 )
 
-var(
-	outLineChan = make(FileProcessor.OutLineChannel,10)
-)
-
 func NewThreadedFileProcessor(threadId int) FileProcessor.ProcessFromPath{
 
 	return &ThreadedFileProcessor{threadId}
@@ -38,17 +34,19 @@ func (b *ThreadedFileProcessor) FromFile(file string, out FileProcessor.OutChann
 		log.Fatal(err)
 	}
 
+	brandNewChan := make(FileProcessor.OutLineChannel, 5)
+
 	scanner := bufio.NewScanner(content)
 
 	  /********************************/
 	 /********** 2nd Stage ***********/
 	/********************************/
-	go b.processLine(scanner, &r)
+	go b.processLine(scanner, &r, &brandNewChan)
 
 	  /********************************/
 	 /********** 3rd Stage ***********/
 	/********************************/
-	for output := range outLineChan{
+	for output := range brandNewChan{
 
 		r.S.NumSentence += output.S.NumSentence
 		r.W.NumWord += output.W.NumWord
@@ -61,7 +59,7 @@ func (b *ThreadedFileProcessor) FromFile(file string, out FileProcessor.OutChann
 	out <- &r
 }
 
-func (b *ThreadedFileProcessor) processLine(scanner *bufio.Scanner, r *FileProcessor.Report) {
+func (b *ThreadedFileProcessor) processLine(scanner *bufio.Scanner, r *FileProcessor.Report, outLineChannel *FileProcessor.OutLineChannel) {
 
 	wg := sync.WaitGroup{}
 	id := 0
@@ -81,7 +79,7 @@ func (b *ThreadedFileProcessor) processLine(scanner *bufio.Scanner, r *FileProce
 					wg.Done()
 				}()
 
-				NewThreadedLineProcessor(fn, index).FromLine(line, outLineChan)
+				NewThreadedLineProcessor(fn, index).FromLine(line, *outLineChannel)
 
 			}(ln, id, r.FileName)
 
@@ -90,7 +88,7 @@ func (b *ThreadedFileProcessor) processLine(scanner *bufio.Scanner, r *FileProce
 	}
 
 	wg.Wait()
-	//close(outLineChan)
+	close(*outLineChannel)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
