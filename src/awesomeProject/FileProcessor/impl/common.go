@@ -97,8 +97,8 @@ func checkWordIsUpper(word string) bool{
 	return false
 }
 
-func createNewReport(name string, id int) *FileProcessor.Report{
-	return &FileProcessor.Report{
+func createNewReport(name string, id int) FileProcessor.Report{
+	return FileProcessor.Report{
 		P:FileProcessor.Paragraph{NumParagraph:0,ListParagraphs:[]string{}},
 		S:FileProcessor.Sentence{NumSentence:0, ListSentence:[]string{}},
 		W:FileProcessor.Word{NumWord:0, Vocabulary:[]string{}},

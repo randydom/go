@@ -84,7 +84,7 @@ func (b *BasicFileProcessor) FromFile(file string, out FileProcessor.OutChannel)
 
 	content.Close()
 
-	out <- r
+	out <- &r
 
 }
 

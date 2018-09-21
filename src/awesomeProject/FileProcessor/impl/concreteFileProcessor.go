@@ -84,7 +84,7 @@ func (c *ConcreteFileProcessor) Count(file string) *FileProcessor.Report{
 
 	content.Close()
 
-	return r
+	return &r
 
 }
 

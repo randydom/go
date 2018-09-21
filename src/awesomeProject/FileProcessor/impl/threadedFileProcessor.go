@@ -6,16 +6,16 @@ import (
 	"os"
 	"log"
 	"bufio"
-)
+		)
 
 type (
 	ThreadedFileProcessor struct{ThreadId int}
-	ThreadedLineProcessor struct{threadId int}
+	//ThreadedLineProcessor struct{fileName string; threadId int}
 )
 
 var(
-	outLineChan = make(FileProcessor.OutLineChannel,50)
-	chanReportList = []FileProcessor.OutLineChannel{nil}
+	outLineChan = make(FileProcessor.OutLineChannel,10)
+	chanReportList = []*FileProcessor.Report{nil}
 )
 
 func NewThreadedFileProcessor(threadId int) FileProcessor.ProcessFromPath{
@@ -23,13 +23,15 @@ func NewThreadedFileProcessor(threadId int) FileProcessor.ProcessFromPath{
 	return &ThreadedFileProcessor{threadId}
 }
 
-func NewThreadedLineProcessor(thrId int) FileProcessor.ProcessFromLine{
-
-	return &ThreadedLineProcessor{thrId}
-}
+//func NewThreadedLineProcessor(file string, thrId int) FileProcessor.ProcessFromLine{
+//
+//return &ThreadedLineProcessor{fileName: file, threadId: thrId,}
+//}
 
 func (b *ThreadedFileProcessor) FromFile(file string, out FileProcessor.OutChannel){
-
+	  /*********************************/
+	 /*********** 1st Stage ***********/
+	/*********************************/
 	r := createNewReport(file, b.ThreadId)
 
 	content, err := os.Open(file) // The “test_case.txt” is a sample text to test the code.
@@ -39,15 +41,28 @@ func (b *ThreadedFileProcessor) FromFile(file string, out FileProcessor.OutChann
 
 	scanner := bufio.NewScanner(content)
 
-	go b.processLine(scanner)
+	  /********************************/
+	 /********** 2nd Stage ***********/
+	/********************************/
+	go b.processLine(scanner, &r)
 
+	  /********************************/
+	 /********** 3rd Stage ***********/
+	/********************************/
 	for output := range outLineChan{
-		chanReportList = append(chanReportList, output)
+
+		r.S.NumSentence += output.S.NumSentence
+		r.W.NumWord += output.W.NumWord
+		r.L.NumLetter += output.L.NumLetter
+
 	}
 
+	content.Close()
+
+	out <- &r
 }
 
-func (b *ThreadedFileProcessor) processLine(scanner *bufio.Scanner) {
+func (b *ThreadedFileProcessor) processLine(scanner *bufio.Scanner, r *FileProcessor.Report) {
 
 	wg := sync.WaitGroup{}
 	id := 0
@@ -56,24 +71,30 @@ func (b *ThreadedFileProcessor) processLine(scanner *bufio.Scanner) {
 		id++
 		ln := scanner.Text()
 
-		go func(line string, index int) {
-			defer func() {
-				wg.Done()
-			}()
+		if len(ln)>0{
 
-			NewThreadedLineProcessor(index).FromLine(line, outLineChan)
+			r.P.ListParagraphs = append(r.P.ListParagraphs, ln)
+			r.P.NumParagraph ++
 
-		}(ln, id)
+			go func(line string, index int, fn string) {
+				defer func() {
+					wg.Done()
+				}()
+
+				NewThreadedLineProcessor(fn, index).FromLine(line, outLineChan)
+
+			}(ln, id, r.FileName)
+
+		}
+
 	}
 
 	wg.Wait()
 	close(outLineChan)
 
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
 }
 
-func (t *ThreadedLineProcessor) FromLine(line string, out FileProcessor.OutLineChannel){
-
-
-
-	//TODO complete the method FromLine
-}
