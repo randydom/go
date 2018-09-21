@@ -15,7 +15,6 @@ type (
 
 var(
 	outLineChan = make(FileProcessor.OutLineChannel,10)
-	chanReportList = []*FileProcessor.Report{nil}
 )
 
 func NewThreadedFileProcessor(threadId int) FileProcessor.ProcessFromPath{
@@ -58,7 +57,7 @@ func (b *ThreadedFileProcessor) FromFile(file string, out FileProcessor.OutChann
 	}
 
 	content.Close()
-
+    //close(outLineChan)
 	out <- &r
 }
 
@@ -66,12 +65,13 @@ func (b *ThreadedFileProcessor) processLine(scanner *bufio.Scanner, r *FileProce
 
 	wg := sync.WaitGroup{}
 	id := 0
+
 	for scanner.Scan() {
-		wg.Add(1)
-		id++
 		ln := scanner.Text()
 
 		if len(ln)>0{
+			wg.Add(1)
+			id++
 
 			r.P.ListParagraphs = append(r.P.ListParagraphs, ln)
 			r.P.NumParagraph ++
@@ -90,7 +90,7 @@ func (b *ThreadedFileProcessor) processLine(scanner *bufio.Scanner, r *FileProce
 	}
 
 	wg.Wait()
-	close(outLineChan)
+	//close(outLineChan)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
