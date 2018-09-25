@@ -1,11 +1,10 @@
 package FileProcessor
 
 import (
+	"log"
+	"net/url"
 	"strings"
 	"unicode"
-	"net/url"
-	"log"
-	"sync"
 )
 
 type (
@@ -68,9 +67,6 @@ type (
 	}
 )
 
- /**************************/
-/********* Locks **********/
-var mu sync.Mutex
 
 func (r *Report) FindWord(sf string) {
 

@@ -31,7 +31,7 @@ func main(){
 
 func buildFileMap() {
 
-	filepath.Walk("./Test/", func(path string, info os.FileInfo, err error) error { 	//"./Shakespere/"
+	filepath.Walk("./Shakespere/", func(path string, info os.FileInfo, err error) error { 	//"./Shakespere/"
 
 		if strings.HasSuffix(path, ".txt") {
 			fileMap = append(fileMap, path)
