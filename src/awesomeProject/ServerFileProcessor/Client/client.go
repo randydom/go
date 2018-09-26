@@ -1,6 +1,7 @@
 package main
 
 import (
+	"awesomeProject/FileProcessor"
 	"awesomeProject/ServerFileProcessor"
 	"bufio"
 	"fmt"
@@ -61,6 +62,21 @@ func SendNewMessage(client *rpc.Client, m *SFProcessor.Message) bool{
 	return false
 }
 
+func NewFileProcessor(client *rpc.Client, m *SFProcessor.Message){
+
+	var report FileProcessor.Report
+
+	rptCall := client.Go("Diavlos.FileProcessor", m, &report, nil)
+	replyCall := <- rptCall.Done
+
+	if replyCall.Error != nil {
+		log.Fatal("Diavlos error: ", replyCall.Error)
+	}
+
+	fmt.Printf("\n*****\nThread Id: %d text: %s\nNumber of:\nparagraphs: %d\nsentences: %d\nword: %d\nletters: %d\n", report.ThreadId,
+		report.FileName, report.P.NumParagraph, report.S.NumSentence, report.W.NumWord, report.L.NumLetter)
+}
+
 func main() {
 
 	var A, B int
@@ -69,7 +85,8 @@ func main() {
 
 	for{
 		//connect to this socket
-		client, err := rpc.Dial("tcp", "127.0.0.1:8024")
+		addr := "192.168.100.162:8024"
+		client, err := rpc.Dial("tcp", addr)
 
 		if err != nil {
 			log.Fatal("dialing: ", err)
