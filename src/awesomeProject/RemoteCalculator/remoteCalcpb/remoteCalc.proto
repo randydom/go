@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package RemoteCalculator;
+
+option go_package = "remoteCalcpb";
+
+service Calculator{
+    // Calculates the operation of two integers
+    //Unary
+    rpc CalculateOperation (Operation) returns (Outcome) {}
+
+    // Server - to - Client streaming RPC
+    rpc CalculateManyOperations (Operation) returns (stream Outcome) {}
+}
+
+// The request message containing the integer number
+message Akeraios {
+    int32 First = 1;
+    int32 Second = 2;
+}
+
+// The request message containing the operation to be made
+message Operation {
+    string Operator = 1;
+    Akeraios Numbers = 2;
+}
+
+// The response message containing the result of the operation
+message Outcome {
+    int32 Result = 1;
+    int32 Remainder = 2;
+}
