@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	"io"
 	"log"
+	"math"
 	"net"
 	"os"
 	"path/filepath"
@@ -27,10 +28,12 @@ var(
 )
 
 func buildPath(dir string){
+	// initialise the file map
+	fileMap = []string{}
 
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error{
 		if strings.HasSuffix(path, ".jpg"){
-			fileMap = append(fileMap, path)
+			fileMap = append(fileMap, info.Name())
 		}
 		if err != nil {
 			log.Fatalf("The error is %v", err)
@@ -40,18 +43,18 @@ func buildPath(dir string){
 	})
 }
 
-//func totalChunks(fileSize int64) uint64 {
-//	var totalParts uint64
-//	var imageChunk = 1 * (1 << 20)
-//
-//	totalParts = uint64(math.Ceil(float64(fileSize) / float64(imageChunk)))
-//
-//	return totalParts
-//}
+func totalChunks(fileSize int64) uint64 {
+	var totalParts uint64
+	var imageChunk = 1 * (1 << 20)
 
-func (s *server) ShowFiles(dir *pb.Folder, stream pb.ShareFileService_ShowFilesServer) error {
+	totalParts = uint64(math.Ceil(float64(fileSize) / float64(imageChunk)))
+
+	return totalParts
+}
+
+func (s *server) ShowFiles(fn *pb.FileName, stream pb.ShareFileService_ShowFilesServer) error {
 	
-	buildPath(dir.Folder)
+	buildPath(fn.Dir.Folder)
 
 	for _, f := range fileMap {
 		stream.Send(&pb.FileName{FileName: f})
@@ -62,20 +65,25 @@ func (s *server) ShowFiles(dir *pb.Folder, stream pb.ShareFileService_ShowFilesS
 
 func (s *server) ServerUpload(fn *pb.FileName, stream pb.ShareFileService_ServerUploadServer) error {
 
-	image, err := os.Open(fn.FileName)
+	image, err := os.Open(fn.Dir.Folder + fn.FileName)
 	if err != nil {
 		log.Fatalf("the requested file does not exist %v", err)
 	}
 
-	stream.SendHeader(metadata.Pairs("filename: ", fn.FileName))
-	fmt.Printf("The stream Header() is: %v", fn.FileName)
+	errStream := stream.SendHeader(metadata.Pairs("filename", fn.FileName))
+	if err != nil{
+		log.Fatalf("The SendHeader had an error: %v", errStream)
+	}
 
-	//imageInfo, _ := image.Stat()
+	fmt.Printf("The stream Header() is: %v\n", fn.FileName)
 
-	chunkContent := make([]byte, 2048*2048) //totalChunks(imageInfo.Size())
+	imageInfo, _ := image.Stat()
+
+	chunkContent := make([]byte, totalChunks(imageInfo.Size())) //totalChunks(imageInfo.Size()) //1024*1024
 
 	for {
-		_, err := image.Read(chunkContent)
+
+		bytesRead, err := image.Read(chunkContent)
 		if err != nil {
 			if err != io.EOF{
 				return err
@@ -91,9 +99,9 @@ func (s *server) ServerUpload(fn *pb.FileName, stream pb.ShareFileService_Server
 				Message: "the package was sent.",
 				Code: pb.UploadStatusCode_OK,
 			},
+			TotalSize: int64(imageInfo.Size()),
+			BytesSent: int64(bytesRead),
 		}
-
-		fmt.Printf("chunkMessage %v", chunkMessage)
 
 		err = stream.Send(&chunkMessage)
 		if err != nil{

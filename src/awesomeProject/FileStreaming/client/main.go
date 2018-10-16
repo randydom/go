@@ -7,16 +7,17 @@ import (
 	"google.golang.org/grpc"
 	"io"
 	"log"
+	"math"
 	"os"
 )
 
 const (
 	address = "localhost:8023"
-	directory = "FileStreaming/media"
+	directory = "FileStreaming/media/"
 )
 
 var (
-	images map[int]string
+	images = map[int]string{}
 )
 
 func main() {
@@ -29,58 +30,33 @@ func main() {
 	defer conn.Close()
 
 	c := pb.NewShareFileServiceClient(conn)
-	getImages(c)
-
-	streamImage(c)
-
-}
-
-func streamImage( c pb.ShareFileServiceClient) {
-
-	var keyNumber int
-	fmt.Println("Choose a number to stream a file:")
-	fmt.Scanf("%d", &keyNumber)
-	filePath := images[keyNumber]
-
-	fp := pb.FileName{
-		FileName: filePath,
-	}
-
-	imageStream, err := c.ServerUpload(context.Background(), &fp)
-	if err != nil {
-		log.Fatalf("Client. The error is: %v", err)
-	}
-
-	meta, err := imageStream.Header()
-	if err != nil || meta["filename"] == nil || meta["filename"][0] == "" {
-		log.Printf("The file does not exist anywhere %v", err)
-	}
-
-	outfile, err := os.Create(meta["filename"][0])
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	for {
-		chunkPart, err := imageStream.Recv()
-		if err != nil {
-			if err != io.EOF {
-				log.Fatalf("The stream reported an error %v", err)
-			} else {
-				break
-			}
+		getImages(c)
 
+		imageFile,isStreamAlive := pickImage()
+
+		if isStreamAlive{
+			fmt.Println("Good bye then.")
+			break
 		}
-		outfile.Write(chunkPart.Batch.Content)
 
+		streamImage(*imageFile, c)
 	}
-}
 
+
+
+}
 func getImages(c pb.ShareFileServiceClient){
 	// This part is the choice of the specific image and the display to a browser
-	fmt.Println("The server files are:")
+	fmt.Println("\nThe server files are:")
 
-	stream, err := c.ShowFiles(context.Background(), &pb.Folder{Folder: directory,})
+	fName := pb.FileName{
+		FileName: "",
+		Dir: &pb.Folder{Folder: directory,},
+	}
+
+	stream, err := c.ShowFiles(context.Background(), &fName)
 	if err != nil {
 		log.Fatalf("could not find the files: %v", err)
 	}
@@ -106,3 +82,78 @@ func getImages(c pb.ShareFileServiceClient){
 	}
 
 }
+
+func pickImage() (*pb.FileName, bool){
+
+	var keyNumber int
+	var exitMsg string
+	var exitChat bool
+	var fp pb.FileName
+
+	fmt.Println("Do you want to exit the chat? Y/N")
+	fmt.Scanf("%s", &exitMsg)
+
+	if exitMsg == "Y" || exitMsg == "y"{
+		exitChat = true
+
+		fp = pb.FileName{
+			FileName: "",
+			Dir: &pb.Folder{ Folder: directory,},
+		}
+	}else
+	{
+		fmt.Println("Choose a number to stream a file:")
+		fmt.Scanf("%d", &keyNumber)
+		filePath := images[keyNumber]
+
+		fp = pb.FileName{
+			FileName: filePath,
+			Dir: &pb.Folder{ Folder: directory,},
+		}
+
+		exitChat = false
+	}
+
+	return &fp, exitChat
+}
+
+func streamImage(fp pb.FileName, c pb.ShareFileServiceClient) {
+
+	totalSent := int64(0)
+
+	imageStream, err := c.ServerUpload(context.Background(), &fp)
+	if err != nil {
+		log.Fatalf("Client. The error is: %v", err)
+	}
+
+	meta, err := imageStream.Header()
+
+	if err != nil || meta["filename"] == nil || meta["filename"][0] == "" {
+		log.Fatalf("The file does not exist anywhere %v", err)
+	}
+
+	outfile, err := os.Create("/Users/pavlos/go/"+meta["filename"][0])
+	fmt.Println(meta["filename"])
+	if err != nil {
+		log.Fatalf("Create os faced an error: %v", err)
+	}
+
+	for {
+		chunkPart, err := imageStream.Recv()
+		if err != nil {
+			if err != io.EOF {
+				log.Fatalf("The stream reported an error %v", err)
+			} else {
+				break
+			}
+
+		}
+		outfile.Write(chunkPart.Batch.Content)
+
+		totalSent += chunkPart.BytesSent
+		fmt.Print("\r", math.Round(float64(totalSent)/float64(chunkPart.TotalSize)*100), "%")
+
+	}
+}
+
+

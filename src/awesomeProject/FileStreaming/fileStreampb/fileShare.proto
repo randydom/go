@@ -13,7 +13,7 @@ service ShareFileService {
     // this RPC shares files between the client and the server
 
     //Provide a function that will return the file names of the media folder
-    rpc ShowFiles(Folder) returns (stream FileName) {}
+    rpc ShowFiles(FileName) returns (stream FileName) {}
 
     // 1 step. Client-to-Server streaming. The server streams the file to the client.
     rpc ServerUpload(FileName) returns (stream ChunkPackage) {}
@@ -23,12 +23,13 @@ message Chunk{
     bytes Content = 1;
 }
 
-message FileName{
-    string FileName = 1;
-}
-
 message Folder{
     string Folder = 1;
+}
+
+message FileName{
+    string FileName = 1;
+    Folder  Dir = 2;
 }
 
 message UploadStatus{
@@ -39,4 +40,6 @@ message UploadStatus{
 message ChunkPackage{
     Chunk Batch = 1;
     UploadStatus Status= 2;
+    int64 TotalSize = 3;
+    int64 BytesSent = 4;
 }
