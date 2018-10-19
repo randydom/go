@@ -4,6 +4,7 @@ import (
 	"awesomeProject/FileProcessor"
 	"awesomeProject/FileProcessor/impl"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,8 +12,8 @@ import (
 )
 
 var (
-	outChan = make(FileProcessor.OutChannel, 10)
 	fileMap []string
+	outChan = make(FileProcessor.OutChannel, 10)
 )
 
 type Args struct{
@@ -60,15 +61,25 @@ func (t *Diavlos) NewMessage( m *Message, reply *string) error {
 	return nil
 }
 
-func (t *Diavlos) FileProcessor(m *Message, reply *FileProcessor.Report) error {
+func (t *Diavlos) FileProcessor(m *Message, reply *[]*FileProcessor.Report) error {
+
+	outChan = make(FileProcessor.OutChannel, 10)
+	var reportList []*FileProcessor.Report
 
 	buildFileMap()
 
 	go processFiles()
 
+	fmt.Println("Print the output channels")
+
 	for output := range outChan {
-		reply = output
+		reportList = append(reportList,output)
+
+		fmt.Printf("\n*****\nThread Id: %d text: %s\nNumber of:\nparagraphs: %d\nsentences: %d\nword: %d\nletters: %d\n", output.ThreadId,
+			output.FileName, output.P.NumParagraph ,output.S.NumSentence, output.W.NumWord, output.L.NumLetter)
 	}
+
+	*reply = reportList
 
 	return nil
 }
@@ -88,7 +99,6 @@ func processFiles() {
 
 		}(fp,i)
 
-
 	}
 
 	wg.Wait()
@@ -104,7 +114,6 @@ func buildFileMap(){
 		if strings.HasSuffix(path, ".txt"){
 			fileMap = append(fileMap, path)
 		}
-
 
 		return nil
 	})

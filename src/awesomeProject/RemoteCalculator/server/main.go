@@ -16,7 +16,10 @@ const (
 	port = ":8024"
 )
 
-var operations = map[int32]string{1:"sum", 2: "sub", 3: "mul", 4: "div",}
+var (
+	operations = map[int32]string{1:"sum", 2: "sub", 3: "mul", 4: "div",}
+)
+
 
 
 //

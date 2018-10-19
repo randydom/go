@@ -20,33 +20,6 @@ var (
 	images = map[int]string{}
 )
 
-func main() {
-
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("Did not connect %v", err)
-	}
-
-	defer conn.Close()
-
-	c := pb.NewShareFileServiceClient(conn)
-
-	for {
-		getImages(c)
-
-		imageFile,isStreamAlive := pickImage()
-
-		if isStreamAlive{
-			fmt.Println("Good bye then.")
-			break
-		}
-
-		streamImage(*imageFile, c)
-	}
-
-
-
-}
 func getImages(c pb.ShareFileServiceClient){
 	// This part is the choice of the specific image and the display to a browser
 	fmt.Println("\nThe server files are:")
@@ -134,6 +107,7 @@ func streamImage(fp pb.FileName, c pb.ShareFileServiceClient) {
 
 	outfile, err := os.Create("/Users/pavlos/go/"+meta["filename"][0])
 	fmt.Println(meta["filename"])
+
 	if err != nil {
 		log.Fatalf("Create os faced an error: %v", err)
 	}
@@ -157,3 +131,30 @@ func streamImage(fp pb.FileName, c pb.ShareFileServiceClient) {
 }
 
 
+func main() {
+
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("Did not connect %v", err)
+	}
+
+	defer conn.Close()
+
+	c := pb.NewShareFileServiceClient(conn)
+
+	for {
+		getImages(c)
+
+		imageFile,isStreamAlive := pickImage()
+
+		if isStreamAlive{
+			fmt.Println("Good bye then.")
+			break
+		}
+
+		streamImage(*imageFile, c)
+	}
+
+
+
+}
