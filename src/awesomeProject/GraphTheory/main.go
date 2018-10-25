@@ -60,7 +60,7 @@ func scanText(file string) []string{
 }
 
 //helper
-func (ng *impl.BasicGraph) scanList(line string) []string{
+func scanList(line string) []string{
 
 	var content []string
 

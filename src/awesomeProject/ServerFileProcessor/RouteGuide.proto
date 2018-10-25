@@ -1,0 +1,42 @@
+syntax = "proto";
+
+package RouteGuide;
+
+ service RouteGuide{
+    // A Simple rpc
+    //obtains the feature at a given position.
+    // A feature with an empty name is returned if there's no feature at the given position
+
+    rpc GetArith(Args) returns (Reply) {}
+
+    //* A server - to - client streaming RPC.
+    //* Obtains the Features available within the given Rectangle.  Results are
+    //* streamed rather than returned at once (e.g. in a response message with a
+    //* repeated field), as the rectangle may cover a large area and contain a
+    //* huge number of features.
+
+    rpc ListFeatures(Arith) return (stream Feature) {}
+
+    //** A client - to - server streaming rpc.
+    //** Accepts a stream of Points on a route being traversed, returning a RouteSummary when traversal is completed
+
+    rpc RecordRoute(stream Arith) returns (RouteSummary) {}
+
+    //*** A bidirectional streaming RPC.
+    //Accepts a stream of RoutesNotes sent while a route is being traversed,
+    //** while receiving other RouteNotes (e.g. other users).
+
+    rpc RouteChat(stream RouteNote) return (stream RouteNote) {}
+}
+
+message Args {
+    int A = 1;
+    int B = 2;
+}
+
+message Quotient {
+    int Quo = 1
+    int Rem = 1
+}
+
+

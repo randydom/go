@@ -10,13 +10,15 @@ import (
 	"log"
 	"math"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 const (
-	port = ":8023"
+	port = ":8080"
+	portB = ":9000"
 )
 
 type (
@@ -25,6 +27,7 @@ type (
 
 var(
 	fileMap []string
+	errChan chan error
 )
 
 func buildPath(dir string){
@@ -117,20 +120,36 @@ func (s *server) ServerUpload(fn *pb.FileName, stream pb.ShareFileService_Server
  */
 
 func main() {
-	fmt.Println("The server is listening..")
+	go servegRPC()
 
+	go serveHTTP()
+
+	log.Fatal(<- errChan)
+
+}
+func serveHTTP() {
+
+	fmt.Printf("The server is also listening to 9000..\n")
+
+	fs := http.FileServer(http.Dir("/Users/pavlos/go/"))
+	http.Handle("/", fs)
+
+	errChan <- http.ListenAndServe("127.0.0.1:" + portB, nil)
+}
+
+func index(w http.ResponseWriter, r *http.Request){
+
+}
+
+func servegRPC() {
+	fmt.Println("The server is listening to 8080..\n")
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-
 	s := grpc.NewServer()
-
 	pb.RegisterShareFileServiceServer(s, &server{})
-
 	reflection.Register(s)
-
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+	errChan <- s.Serve(lis)
 }
+

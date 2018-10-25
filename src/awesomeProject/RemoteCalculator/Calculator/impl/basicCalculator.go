@@ -21,6 +21,10 @@ func NewBasicCalculator(o string, nf int32, ns int32) Calculator.MyCalculator{
 
 }
 
+/*
+	The Operate function controls the operations that has to run.
+	Returns the result and the remainder of the operation.
+ */
 func (b *BasicCalculator) Operate() (int32, int32){
 
 	// The nSet contains the info for the outcome.
@@ -32,7 +36,7 @@ func (b *BasicCalculator) Operate() (int32, int32){
 	}else if b.Opr == "mul" {
 		nSet.Outcome =  Multiply(nSet.First, nSet.Second)
 	}else if b.Opr == "sub" {
-		nSet.Outcome =  Substract(nSet.First, nSet.Second)
+		nSet.Outcome =  Subtract(nSet.First, nSet.Second)
 	}else if b.Opr == "div" {
 		nSet.Outcome, nSet.Remainder =  Divide(nSet.First, nSet.Second)
 	}else {
@@ -41,7 +45,3 @@ func (b *BasicCalculator) Operate() (int32, int32){
 
 	return nSet.Outcome, nSet.Remainder
 }
-
-//func PrintOutcome(o string, f int32, s int32){
-//	fmt.Printf("The operation is: %s\nThe outcome is: %d\nand the remainder: %d\n", o, f, s)
-//}

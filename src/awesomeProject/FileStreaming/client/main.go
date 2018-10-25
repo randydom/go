@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	address = "localhost:8023"
+	address = "127.0.0.1:8080"
 	directory = "FileStreaming/media/"
 )
 

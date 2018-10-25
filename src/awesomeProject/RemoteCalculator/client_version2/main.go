@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	address = "localhost:8024"
+	address = "127.0.0.1:8024"
 )
 
 func main() {
