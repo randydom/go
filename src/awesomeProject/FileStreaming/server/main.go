@@ -19,6 +19,7 @@ import (
 const (
 	port = ":8080"
 	portB = ":9000"
+	directory = "FileStreaming/media/"
 )
 
 type (
@@ -57,6 +58,8 @@ func totalChunks(fileSize int64) uint64 {
 
 func (s *server) ShowFiles(fn *pb.FileName, stream pb.ShareFileService_ShowFilesServer) error {
 	
+	fn.Dir.Folder = directory
+	//build the path for the media files.
 	buildPath(fn.Dir.Folder)
 
 	for _, f := range fileMap {
@@ -67,6 +70,8 @@ func (s *server) ShowFiles(fn *pb.FileName, stream pb.ShareFileService_ShowFiles
 }
 
 func (s *server) ServerUpload(fn *pb.FileName, stream pb.ShareFileService_ServerUploadServer) error {
+
+	fn.Dir.Folder = directory
 
 	image, err := os.Open(fn.Dir.Folder + fn.FileName)
 	if err != nil {
@@ -137,12 +142,9 @@ func serveHTTP() {
 	errChan <- http.ListenAndServe("127.0.0.1:" + portB, nil)
 }
 
-func index(w http.ResponseWriter, r *http.Request){
-
-}
 
 func servegRPC() {
-	fmt.Println("The server is listening to 8080..\n")
+	fmt.Println("The server is listening to 8080..")
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

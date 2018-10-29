@@ -13,7 +13,6 @@ import (
 
 const (
 	address = "127.0.0.1:8080"
-	directory = "FileStreaming/media/"
 )
 
 var (
@@ -26,7 +25,7 @@ func getImages(c pb.ShareFileServiceClient){
 
 	fName := pb.FileName{
 		FileName: "",
-		Dir: &pb.Folder{Folder: directory,},
+		Dir: &pb.Folder{Folder: "",},
 	}
 
 	stream, err := c.ShowFiles(context.Background(), &fName)
@@ -71,7 +70,7 @@ func pickImage() (*pb.FileName, bool){
 
 		fp = pb.FileName{
 			FileName: "",
-			Dir: &pb.Folder{ Folder: directory,},
+			Dir: &pb.Folder{ Folder: "",},
 		}
 	}else
 	{
@@ -81,7 +80,7 @@ func pickImage() (*pb.FileName, bool){
 
 		fp = pb.FileName{
 			FileName: filePath,
-			Dir: &pb.Folder{ Folder: directory,},
+			Dir: &pb.Folder{ Folder: "",},
 		}
 
 		exitChat = false
